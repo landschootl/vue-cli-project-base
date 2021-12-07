@@ -1,5 +1,5 @@
 <template>
-    <div>{{product.id}} - {{product.name}} - {{product.price}}</div>
+    <md-list-item class="item-btn" @click="selectProduct()">{{product.name}} <code>{{product.price}}</code></md-list-item>
 </template>
 
 <script>
@@ -7,10 +7,17 @@
         name: "Product",
         props: {
             product: Object
+        },
+        methods: {
+            selectProduct() {
+                this.$emit('selectProduct', this.product);
+            }
         }
     }
 </script>
 
 <style scoped>
-
+    .item-btn {
+        cursor: pointer;
+    }
 </style>
