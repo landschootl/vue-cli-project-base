@@ -8,14 +8,18 @@
       <p>Produits en chargement ...</p>
       <md-progress-spinner md-mode="indeterminate"></md-progress-spinner>
     </div>
-    <div>
-      <p>Nombre de produit : {{this.products.length}}</p>
+    <div v-else>
+      <p>Nombre de produit : {{this.productsFiltered.length}}</p>
       <p>Prix des produits : {{totalPrice}}</p>
+      <md-field>
+        <label for="search">Recherche</label>
+        <md-input type="text" name="search" v-model="search" />
+      </md-field>
       <md-list>
-        <Product v-for="(product, index) in products" :key="'product-'+index" :product="product" @selectProduct="updateProduct($event)"/>
+        <Product v-for="(product, index) in productsFiltered" :key="'product-'+index" :product="product" @selectProduct="updateProduct($event)"/>
       </md-list>
       <md-button class="md-primary md-raised" @click="createProduct()">Créer un produit</md-button>
-      <SaveProduct :product="newProduct" :edit-mode="newProduct.id != null" @saveProduct="saveProduct($event)" @deleteProduct="deleteProduct($event)"/>
+      <SaveProduct :product="newProduct" :edit-mode="newProduct.id != null" :active="saveProductActive" @saveProduct="saveProduct($event)" @deleteProduct="deleteProduct($event)" @close="saveProductActive=false"/>
     </div>
   </div>
 </template>
@@ -35,17 +39,24 @@
         backendUrl: 'https://node-baseapi.herokuapp.com/api',
         productsIsLoad: false,
         products: [],
-        newProduct: {name: 'nameDefault', price: 0}
+        saveProductActive: false,
+        newProduct: {},
+        search: ''
       }
     },
     computed: {
       totalPrice() {
-        return this.products.length === 0
+        return this.productsFiltered.length === 0
           ? 0
-          : this.products
+          : this.productsFiltered
                   .map(product => product.price)
                   .reduce((total, price) => total + price)
                   .toFixed(2);
+      },
+      productsFiltered() {
+        return this.search === ''
+                ? this.products
+                : this.products.filter(product => product.name.includes(this.search));
       }
     },
     created() {
@@ -67,6 +78,7 @@
           this.axios.put(`${this.backendUrl}/products/${productUpdate.id}`, productUpdate)
                   .then(() => {
                     this.initProducts();
+                    this.saveProductActive = false;
                   })
                   .catch(e => {
                     console.log('error -> ', e);
@@ -75,6 +87,7 @@
           this.axios.post(`${this.backendUrl}/products`, productUpdate)
                   .then(() => {
                     this.initProducts();
+                    this.saveProductActive = false;
                   })
                   .catch(e => {
                     console.log('error -> ', e);
@@ -83,15 +96,18 @@
       },
       updateProduct(product) {
         this.newProduct = product;
+        this.saveProductActive = true;
       },
       createProduct() {
-        this.newProduct = Object.assign({name: 'nameDefault', price: 0});
+        this.newProduct = Object.assign({name: 'name', price: 0});
+        this.saveProductActive = true;
       },
       deleteProduct(product) {
         this.axios.delete(`${this.backendUrl}/products/${product.id}`)
                 .then(() => {
                   this.initProducts();
-                  this.newProduct = {name: 'nameDefault', price: 0};
+                  this.newProduct = {name: 'name', price: 0};
+                  this.saveProductActive = false;
                 })
                 .catch(e => {
                   console.log('error -> ', e);
